@@ -7,7 +7,7 @@ class MainMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Math Skills Charity App")),
+      appBar: AppBar(title: Text("numbers")),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

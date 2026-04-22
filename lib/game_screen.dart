@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'math_engine.dart';
+import 'main.dart';
 
 class GameScreen extends StatefulWidget {
   final int timeLimit; // 0, 20, or 10 
@@ -55,10 +56,22 @@ class _GameScreenState extends State<GameScreen> {
   void _showResult() {
     showDialog(
       context: context,
+      barrierDismissible: false, // Prevents closing by clicking outside
       builder: (ctx) => AlertDialog(
         title: Text("Game Over!"),
-        content: Text("Your score is $score/10"),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text("Menu"))],
+        content: Text("Final Score: $score/10"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              // This removes the GameScreen and goes back to the MainMenu
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => MainMenu()),
+                    (Route<dynamic> route) => false,
+              );
+            },
+            child: Text("Return to Menu"),
+          ),
+        ],
       ),
     );
   }
