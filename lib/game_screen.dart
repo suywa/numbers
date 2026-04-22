@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'math_engine.dart';
 import 'main.dart';
 
 class GameScreen extends StatefulWidget {
-  final int timeLimit; // 0, 20, or 10 
-  GameScreen({required this.timeLimit});
+  final int timeLimit;
+
+  const GameScreen({super.key, required this.timeLimit});
 
   @override
-  _GameScreenState createState() => _GameScreenState();
+  State<GameScreen> createState() => _GameScreenState();
 }
 
 class _GameScreenState extends State<GameScreen> {
@@ -30,17 +32,25 @@ class _GameScreenState extends State<GameScreen> {
     if (widget.timeLimit == 0) return;
     timeLeft = widget.timeLimit;
     timer?.cancel();
-    timer = Timer.periodic(Duration(seconds: 1), (t) {
-      setState(() {
-        if (timeLeft > 0) timeLeft--;
-        else nextQuestion(false); // Time's up
-      });
+    timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (mounted) {
+        setState(() {
+          if (timeLeft > 0) {
+            timeLeft--;
+          } else {
+            nextQuestion(false);
+          }
+        });
+      }
     });
   }
 
   void nextQuestion(bool wasCorrect) {
-    if (wasCorrect) score++;
-    if (questionCount < 10) { // Ten questions per game 
+    if (wasCorrect) {
+      score++;
+    }
+
+    if (questionCount < 10) {
       setState(() {
         questionCount++;
         currentQuestion = MathQuestion.generate();
@@ -56,46 +66,125 @@ class _GameScreenState extends State<GameScreen> {
   void _showResult() {
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevents closing by clicking outside
-      builder: (ctx) => AlertDialog(
-        title: Text("Game Over!"),
-        content: Text("Final Score: $score/10"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              // This removes the GameScreen and goes back to the MainMenu
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => MainMenu()),
-                    (Route<dynamic> route) => false,
-              );
-            },
-            child: Text("Return to Menu"),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Text("Game Over!", style: GoogleFonts.unkempt(fontSize: 28)),
+          content: Text("Final Score: $score/10", style: GoogleFonts.unkempt(fontSize: 22)),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => MainMenu()),
+                      (Route<dynamic> route) => false,
+                );
+              },
+              child: Text("Return to Menu", style: GoogleFonts.unkempt(fontSize: 18)),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Level ${widget.timeLimit == 0 ? '0' : widget.timeLimit == 20 ? '1' : '2'}")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Question $questionCount of 10"),
-            if (widget.timeLimit > 0) Text("Time Left: $timeLeft", style: TextStyle(color: Colors.red, fontSize: 24)),
-            Text(currentQuestion.text, style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold)),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: TextField(controller: _controller, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: "Answer")),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.lightBlueAccent, Colors.white],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Question $questionCount of 10",
+                    style: GoogleFonts.unkempt(fontSize: 24, color: Colors.blueGrey),
+                  ),
+                  const SizedBox(height: 10),
+
+                  if (widget.timeLimit > 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        // FIXED: Using withValues for modern Flutter versions
+                        color: Colors.redAccent.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        "Time Left: $timeLeft",
+                        style: GoogleFonts.unkempt(
+                            color: Colors.red,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold
+                        ),
+                      ),
+                    ),
+
+                  const SizedBox(height: 30),
+
+                  Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(50.0),
+                      child: Text(
+                        currentQuestion.text,
+                        style: GoogleFonts.unkempt(
+                          fontSize: 80,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepOrangeAccent,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 60, vertical: 30),
+                    child: TextField(
+                      controller: _controller,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.unkempt(fontSize: 36),
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        hintText: "?",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(25),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  ElevatedButton(
+                    onPressed: () {
+                      if (_controller.text.isNotEmpty) {
+                        nextQuestion(int.tryParse(_controller.text) == currentQuestion.answer);
+                      }
+                    },
+                    child: const Text("SUBMIT"),
+                  ),
+                ],
+              ),
             ),
-            ElevatedButton(
-              onPressed: () => nextQuestion(int.tryParse(_controller.text) == currentQuestion.answer),
-              child: Text("Submit"),
-            ),
-          ],
+          ),
         ),
       ),
     );
